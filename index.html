@@ -1,0 +1,394 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset ="utf-8">
+<meta name ="veiwport" content="inital-scale=1, maximum-scale=1, user-scalable=no">
+<title>Cart 2 Project</title>
+<style>
+    html,body {
+        position: absolute;
+        height: 100%;
+        width: 100%;
+        background-color: black;
+    }
+    #mainDiv{
+        position: absolute;
+        height: 100%;
+        width: 100%;
+        background-color: black;
+    }
+    #map{
+        float: bottom;
+        height: 85%;
+        width: 100%;
+        background-color: black;
+        position: absolute;
+    }
+   
+    #viewDiv {
+        padding: 0;
+        float: right;
+        left: 0;
+        margin: 0;
+        height: 100%;
+        width: 80%;
+    }
+    #viewDiv1 {
+        padding: 0;
+        float: left;
+        left: 0;
+        margin: 0;
+        height: 100%;
+        width: 49.5%;
+    }
+    #viewDiv2 {
+        padding: 0;
+        float: right;
+        right: 0;
+        height: 100%;
+        width: 49.5%;
+    }
+    #titleDiv{
+        float: top;
+        height: 15%;
+        width: 100%;
+        background-color: black;
+    }
+    #titleDiv1 {
+       float: top;
+        height: 60%;
+        width: 100%;
+        text-align: center;
+        font-size: 20pt;
+        color: white;
+        background-color: orange;
+        padding: .5%;
+        line-height: 80px;
+    }
+    #header {
+       float: inherit;
+        height: 20%;
+        width: 100%;
+        background-color: black;
+        text-align: 5%;
+        color: grey;
+        font-weight: 600;
+    }
+    #header1 {
+        float: right;
+        height: 100%;
+        width: 40%;
+        background-color: black;
+        color: grey;
+        font-weight: 600;
+        text-align: center;
+        padding-top: 10px;
+    }
+    #header2{
+        float: right;
+        height: 100%;
+        width: 40%;
+        background-color: black;
+        color: grey;
+        text-align: 5%;
+        font-weight: 600;
+        text-align: center;
+        padding-top: 10px;
+    }
+    
+    #header3{
+        float: left;
+        height: 100%;
+        width: 20%;
+        background-color: black;
+        color: grey;
+        font-weight: 600;
+        text-align: left;
+    }
+     #overviewDiv {
+        position: absolute;
+         bottom: 20px;
+        right: 12px;
+        width: 150px;
+        height: 113px;
+        border: 1px solid black;
+        z-index: 100;
+    }
+    #extentDiv {
+        border: 2px solid red;
+        position: absolute;
+        z-index: 2;
+    }
+    #legendDiv {
+        padding: 0;
+        float: right;
+        right: 0;
+        margin: 0;
+        height: 100%;
+        width: 19.5%;
+    }
+    #legendDiv1 {
+        padding: 0;
+        float: bottom;
+        right: 0;
+        margin: 0;
+        height: 85%;
+        width: 100%;
+    }
+    searchDiv{
+        padding: 0;
+        float: top;
+        left: 0;
+        margin: 0;
+        height: 14.5%;
+        width: 100%;
+    }
+    </style>
+<link rel="stylesheet" href="https://js.arcgis.com/4.12/esri/themes/dark/main.css">
+<script src="https://js.arcgis.com/4.12"></script>
+    <script>
+    require([
+    "esri/Map",
+    "esri/views/MapView",
+    "esri/layers/FeatureLayer", 
+    "esri/widgets/Search",
+    "esri/widgets/LayerList",
+    "esri/core/watchUtils", 
+    "esri/geometry/Point",
+    "esri/views/View",
+    "dojo/domReady!"
+        ], function(
+           Map, MapView, FeatureLayer, Search, LayersList, watchUtils, Point, View
+            ) {
+        var map1 = new Map({
+            basemap: "streets"
+        });
+        var view = new MapView({
+            container: "viewDiv1",
+            map: map1,
+            zoom: 7,
+            center: [-82.7, 40]
+        });
+       var map2 = new Map ({
+            basemap: "streets"
+        });
+        var view2 = new MapView({
+            container: "viewDiv2",
+            map: map2,
+            zoom: 7,
+            center: [-82.7, 40]
+        }); 
+       /* var legendView = new View ({
+            container: "legendDiv",
+            map: map1 && map2,
+            
+            
+        }); */
+        var counties = new FeatureLayer({
+            portalItem: {
+                id:"36582373f73048ceb435556db8d089d1"
+            }
+        });        
+        map1.add(counties);
+        
+        var counties2 = new FeatureLayer({
+            portalItem: {
+                id:"36582373f73048ceb435556db8d089d1"
+            }
+        });
+        map2.add(counties2);
+        var overviewmap = new Map ({
+            basemap: "streets"
+        });
+        
+        var smallview = new MapView ({
+            container: "overviewDiv",
+            map: overviewmap,
+            constraints: {
+                rotationEnabled: false
+            }
+        });
+        
+        smallview.ui.components = [];
+        
+        var extentDiv = document.getElementById("extentDiv");
+        
+        smallview.when(function() {
+            view.watch("extent", updateOverviewExtent);
+            smallview.watch("extent", updateOverviewExtent);
+        });
+        watchUtils.when(view2, "stationary", updateoverview);
+        
+        function updateoverview() {
+            smallview.goTo ({
+                center: view2.center,
+                scale: view2.scale * 2 * Math.max
+                (view2.width / smallview.width, view2.height / smallview.height)
+            });
+        }
+        
+        function updateOverviewExtent() {
+            var extent = view2.extent;
+            
+            var bottomLeft = smallview.toScreen(new Point ({
+                x: extent.xmin,
+                y: extent.ymin,
+                spatialReference: extent.spatialReference})
+         );
+             var topRight = smallview.toScreen(new Point ({
+                x: extent.xmax,
+                y: extent.ymax,
+                spatialReference: extent.spatialReference})
+         );
+            
+            extentDiv.style.top = topRight.y + "px";
+            extentDiv.style.left = bottomLeft.x + "px";
+            extentDiv.style.height = (bottomLeft.y - topRight.y) + "px";
+            extentDiv.style.width = (topRight.x - bottomLeft.x) + "px";
+        };
+
+        /*var foodInsecurity = new FeatureLayer({
+             portalItem:{
+            id: ""}
+        });
+        map.add(foodInsecurity);
+*/        var income = new FeatureLayer({
+            portalItem:{
+                id: "f916776e2a074e42be7ee32274138031"
+            }
+        });
+        map1.add(income);
+        var unemployment = new FeatureLayer({
+            portalItem: {
+                id: "d1832ae6f8e34b96ae4330068b6bd3f7"
+            }
+        });
+        map1.add(unemployment);
+        var obesity = new FeatureLayer({
+            portalItem: {
+                id: "73251e085faa4e7291a19cff022c39c8"        
+            }
+        });
+        map2.add(obesity);
+        var diabetes = new FeatureLayer({
+            portalItem: {
+                id: "9ded087810bf47759c2131b314c0cbb8"
+            }
+        });
+        map2.add(diabetes);
+        
+       
+        var searchWidget = new Search ({
+            view: view,
+            container: "searchDiv"
+        });
+      
+        
+        const layersListed = new LayersList ({
+          container: "legendDiv",
+            view: view,
+            listItemCreatedFunction: function (event) {
+                const item = event.item;
+                if (item.layer.type !="group"){
+                    item.panel = { content: "legend",
+                                 open: true};
+                }
+            }
+        });
+        
+        
+        var synchronizeView = function(view, others){
+             others=Array.isArray(others)? others: [others];
+             var viewpointWatchHandle;
+             var viewStationaryHandle;
+             var otherInteractHandlers;
+             var scheduleId;
+        
+             var clear = function(){
+                 if (otherInteractHandlers){
+                     otherInteractHandlers.forEach(function(handle){
+                         handle.remove();
+                     });
+                 }
+                 viewpointWatchHandle && viewpointWatchHandle.remove();
+                 viewStationaryHandle && viewStationaryHandle.remove();
+                 scheduleId && clearTimeout(scheduleId);
+                 otherInteractHandlers = viewpointWatchHandle=viewStationaryHandle=scheduleId=null;
+             };
+             var interactWatcher = 
+                 view.watch('interacting,animation',function(newValue){
+                     if(!newValue){
+                         return;
+                     }
+                     if(viewpointWatchHandle || scheduleId){
+                         return;
+                     }
+                     scheduleId=setTimeout(function() {
+                         scheduleId=null;
+                         viewpointWatchHandle=view.watch("viewpoint",function(newValue){
+                             others.forEach(function(otherView){
+                                 otherView.viewpoint=newValue;
+                             });
+                         });
+                     },0);
+                     otherInteractHandlers = others.map(function(otherView){
+                         return watchUtils.watch(otherView,
+                                                'interacting, animation',
+                                                function(
+                                                value){
+                             if(value){
+                                 clear();
+                             }
+                         });
+                     });
+                     viewStationaryHandle = watchUtils.whenTrue(view,'stationary',clear);
+                 });
+             return {
+                 remove: function(){
+                     this.remove = function(){};
+                     clear();
+                     interactWatcher.remove();
+                 }
+             }
+         };
+        var synchronizeViews = function(views){
+            var handles = views.map(function(view,idx,views) {
+                var others = views.concat();
+                others.splice(idx,1);
+                return synchronizeView(view,others);
+            });
+            return {
+                remove: function(){
+                    this.remove = function(){};
+                    handles.forEach(function(h) {
+                        h.remove();
+                    });
+                    handles= null;
+                }
+            }          
+        }
+        
+        synchronizeViews([view, view2]);
+
+        });
+    
+    </script>
+
+    </head>
+    <body>
+        <div id= "mainDiv">
+        <div id = titleDiv>
+       <div id= "titleDiv1">Factors of Food Insecurity in Ohio</div>
+            <div id = "header"> <div id="header2">Health Factors</div><div id = "header1">Societal Factors</div></div><div id="header3"></div></div>
+            <div id= "map">
+            <div id="viewDiv"><div id = "viewDiv1">
+                <div id = "overviewDiv">
+                <div id = "extentDiv"></div></div></div>
+                <div id = "viewDiv2"></div></div>
+            <div id = "legendDiv"><div id = "legendDiv1"></div><div id = "searchDiv">
+                </div></div></div>
+            </div>
+
+       
+     </body>
+</html>
